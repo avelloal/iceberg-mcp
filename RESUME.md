@@ -36,7 +36,18 @@ state/impala.env         IMPALA_PASSWORD (gitignored)
 - App is behind Knox → clients send `Authorization: Bearer <CML APIv2 key>` (in-session: `CDSW_APIV2_KEY`).
 - RISK to verify: Knox may buffer MCP SSE streaming; if so, test from an in-project CML Session.
 
-## State (fill as deployed)
-- CML project id: <tbd>
-- Bootstrap job id: <tbd>
-- Application subdomain / URL: <tbd>
+## State (deployed)
+- CML project id: `huau-bgkv-80gb-7c44` (from public repo github.com/avelloal/iceberg-mcp)
+- Jobs: `bootstrap-deps` (installs ~/.local deps), `git-sync` (fetch+reset to origin/main)
+- Application: subdomain **icebergmcp2**, URL
+  `https://icebergmcp2.ml-cc27e256-5e1.se-sandb.a465-9q4k.cloudera.site` (MCP at `/mcp/`), RUNNING
+- Verified: `list_tools` works through Knox (Bearer); `get_schema`/`execute_query` reach Impala.
+  Client passes `X-Impala-*` headers; FastMCP 4.1.3 streamable-HTTP.
+
+## Deploy gotchas hit (all fixed)
+- Private repo clone into CML failed → made repo public.
+- Bootstrap: `pip --user` vs runtime `PIP_TARGET` conflict → detect/fallback.
+- App: `__file__` undefined in CML scripts → use `os.getcwd()`.
+- Upstream `finally: conn.close()` masks real errors on failed connect → guarded.
+- No CML job/app logs API → scripts write *_log.txt, pulled via download_project_file_v2.
+- `upload_file` can't target subdirs → update code via git-sync job (reset --hard origin/main).

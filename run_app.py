@@ -8,7 +8,8 @@ import os
 import sys
 import subprocess
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+# CML runs app scripts with __file__ undefined; the project root is the cwd.
+HERE = os.getcwd()
 LOG = open(os.path.join(HERE, "app_log.txt"), "w", buffering=1)
 
 

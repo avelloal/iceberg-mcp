@@ -21,7 +21,10 @@ state/impala.env         IMPALA_PASSWORD (gitignored)
 - Env `se-sandbox-aws`, CDW cluster `env-h8cvm6`, Impala VW `xom-ice-kudu` (`impala-1792609196-cjs5`, Running).
 - `IMPALA_HOST=coordinator-xom-ice-kudu.dw-se-sandbox-aws.a465-9q4k.cloudera.site` PORT 443
   httpPath `cliservice`, ssl, http transport, auth **LDAP** (workload user/pw). Supported: ldap/jwt/sso.
-- `IMPALA_USER=avelloal`, `IMPALA_PASSWORD`=workload password (state/impala.env), `IMPALA_DATABASE=default`.
+- `IMPALA_DATABASE=default`. **Credentials are NOT stored server-side** — the client passes
+  `X-Impala-User`/`X-Impala-Password` (+ optional `-Host`/`-Database`) as HTTP headers per
+  connection; `impala_tools.get_db_connection()` reads header → env → default. The app env only
+  carries non-secret defaults (host/port/db/ssl/transport/auth) + `MCP_TRANSPORT=http`.
 
 ## Key decisions / gotchas
 - Install deps directly (NOT the repo package): repo pins `requires-python>=3.13`; CML runtime is 3.11

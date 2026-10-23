@@ -12,18 +12,38 @@ import json
 import os
 from impala.dbapi import connect
 
+# --- MODIFIED from upstream (cloudera/iceberg-mcp-server @ 38a7f39) ---
+# Credentials are supplied per-request by the MCP client via HTTP headers, so the deployed
+# server holds no Impala secret. Precedence for each setting: request header -> env var ->
+# default. Header names: X-Impala-User / -Password / -Host / -Port / -Database /
+# -Auth-Mechanism / -Http-Path / -Use-Ssl / -Use-Http-Transport.
+try:
+    from fastmcp.server.dependencies import get_http_headers
+except Exception:  # not running under HTTP transport, or older fastmcp
+    def get_http_headers(include_all=False):  # type: ignore
+        return {}
 
-# Helper to get Impala connection details from env vars
+
+def _setting(headers, header_name, env_name, default):
+    """Resolve one connection setting: HTTP header first, then env var, then default."""
+    val = headers.get(header_name.lower())
+    if val is None or val == "":
+        val = os.getenv(env_name)
+    return val if (val is not None and val != "") else default
+
+
+# Helper to get Impala connection details from request headers, then env vars
 def get_db_connection():
-    host = os.getenv("IMPALA_HOST", "coordinator-default-impala.example.com")
-    port = int(os.getenv("IMPALA_PORT", "443"))
-    user = os.getenv("IMPALA_USER", "username")
-    password = os.getenv("IMPALA_PASSWORD", "password")
-    database = os.getenv("IMPALA_DATABASE", "default")
-    auth_mechanism = os.getenv("IMPALA_AUTH_MECHANISM", "LDAP")
-    use_http_transport = os.getenv("IMPALA_USE_HTTP_TRANSPORT", "true")
-    http_path = os.getenv("IMPALA_HTTP_PATH", "cliservice")
-    use_ssl = os.getenv("IMPALA_USE_SSL", "true")
+    headers = get_http_headers() or {}
+    host = _setting(headers, "X-Impala-Host", "IMPALA_HOST", "coordinator-default-impala.example.com")
+    port = int(_setting(headers, "X-Impala-Port", "IMPALA_PORT", "443"))
+    user = _setting(headers, "X-Impala-User", "IMPALA_USER", "username")
+    password = _setting(headers, "X-Impala-Password", "IMPALA_PASSWORD", "password")
+    database = _setting(headers, "X-Impala-Database", "IMPALA_DATABASE", "default")
+    auth_mechanism = _setting(headers, "X-Impala-Auth-Mechanism", "IMPALA_AUTH_MECHANISM", "LDAP")
+    use_http_transport = _setting(headers, "X-Impala-Use-Http-Transport", "IMPALA_USE_HTTP_TRANSPORT", "true")
+    http_path = _setting(headers, "X-Impala-Http-Path", "IMPALA_HTTP_PATH", "cliservice")
+    use_ssl = _setting(headers, "X-Impala-Use-Ssl", "IMPALA_USE_SSL", "true")
 
     return connect(
         host=host,

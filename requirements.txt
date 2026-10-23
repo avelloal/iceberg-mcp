@@ -1,0 +1,4 @@
+fastmcp>=2.9.2
+impyla>=0.21.0
+mcp[cli]>=1.9.4
+python-dotenv>=1.1.0

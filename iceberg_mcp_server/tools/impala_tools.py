@@ -84,8 +84,13 @@ def execute_query(query: str) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
     finally:
-        if conn:
-            conn.close()
+        # MODIFIED: guard close() — on a failed connection impyla's close() can raise
+        # ("'NoneType' object has no attribute 'close'"), masking the real error (e.g. auth).
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def get_schema() -> str:
@@ -100,5 +105,10 @@ def get_schema() -> str:
     except Exception as e:
         return f"Error: {str(e)}"
     finally:
-        if conn:
-            conn.close()
+        # MODIFIED: guard close() — on a failed connection impyla's close() can raise
+        # ("'NoneType' object has no attribute 'close'"), masking the real error (e.g. auth).
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
